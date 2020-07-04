@@ -1,16 +1,39 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+auther: Eng.Sarah Hassan
 output: 
   html_document:
     keep_md: true
 ---
 
-
+```{r echo=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+```
+```{r}
+library(dplyr)
+```
 ## Loading and preprocessing the data
 
-
+```{r}
+if(!file.exists("activity.csv")){unzip("activity.zip")}
+activityData<-read.csv("activity.csv",header = TRUE)
+activityData$date<-as.Date(activityData$date)
+```
 
 ## What is mean total number of steps taken per day?
+```{r}
+#totalPerDay<-aggregate(steps~date,data=activityData,FUN = sum,simplify = T,na.rm=T)
+
+summaryPerDay<-activityData %>%
+                group_by(date)%>%
+                summarise(totalSteps=sum(steps,na.rm=T),
+                          meanSteps=mean(steps,na.rm=T),
+                          medianSteps=median(steps,na.rm=T),.groups="keep")
+
+plot(summaryPerDay$date,summaryPerDay$totalSteps,xlab="Date",ylab="Total steps",main="Total Steps Per Day",type = "h",lwd=5,lend=1,col="lightblue")
+
+summaryPerDay
+```
 
 
 
