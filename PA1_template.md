@@ -33,6 +33,7 @@ library(dplyr)
 
 ```r
 library(xtable)
+library(lattice)
 ```
 ## Loading and preprocessing the data
 
@@ -65,7 +66,7 @@ print(xt,type="html")
 ```
 
 <!-- html table generated in R 3.6.3 by xtable 1.8-4 package -->
-<!-- Sat Jul 04 13:30:32 2020 -->
+<!-- Sun Jul 05 04:21:35 2020 -->
 <table border=1>
 <tr> <th>  </th> <th> date </th> <th> totalSteps </th> <th> meanSteps </th> <th> medianSteps </th>  </tr>
   <tr> <td align="right"> 1 </td> <td align="right"> 15614.00 </td> <td align="right">   0 </td> <td align="right">  </td> <td align="right">  </td> </tr>
@@ -192,7 +193,7 @@ print(xtNew,type="html")
 ```
 
 <!-- html table generated in R 3.6.3 by xtable 1.8-4 package -->
-<!-- Sat Jul 04 13:30:33 2020 -->
+<!-- Sun Jul 05 04:21:36 2020 -->
 <table border=1>
 <tr> <th>  </th> <th> date </th> <th> totalSteps </th> <th> meanSteps </th> <th> medianSteps </th>  </tr>
   <tr> <td align="right"> 1 </td> <td align="right"> 15614.00 </td> <td align="right"> 10766.19 </td> <td align="right"> 37.38 </td> <td align="right"> 34.11 </td> </tr>
@@ -267,5 +268,25 @@ plot(summaryPerDayNew$date,summaryPerDayNew$totalSteps,xlab="Date",ylab="Total s
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+The impact of imputing missing data on the estimates of the total daily number of steps: it helped filling the gaps by eliminating NAs without afftecting summaries  
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+```r
+activityDataNew<-mutate(activityDataNew,dayType=
+                     factor( weekdays(activityDataNew$date,T)%in% c("Sat","Sun"),
+                             labels =c("weekday","weekend"))
+                     )
+```
+
+
+```r
+avgStepsPerIntervalNew<-aggregate(steps~interval+dayType,data=activityDataNew,FUN = mean,simplify = T,na.rm=T)
+
+
+xyplot(steps~interval|dayType,data = avgStepsPerIntervalNew,type="l",layout=c(1,2))
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
