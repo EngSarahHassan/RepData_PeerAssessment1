@@ -9,8 +9,12 @@ output:
 ```{r echo=FALSE}
 knitr::opts_chunk$set(echo=TRUE)
 ```
+Used packages  
+
 ```{r}
 library(dplyr)
+library(xtable)
+library(lattice)
 ```
 ## Loading and preprocessing the data
 
@@ -31,18 +35,88 @@ summaryPerDay<-activityData %>%
                           medianSteps=median(steps,na.rm=T),.groups="keep")
 
 plot(summaryPerDay$date,summaryPerDay$totalSteps,xlab="Date",ylab="Total steps",main="Total Steps Per Day",type = "h",lwd=5,lend=1,col="lightblue")
+```
+```{r results='asis'}
 
-summaryPerDay
+xt<-xtable(summaryPerDay)
+print(xt,type="html")
+
 ```
 
 
-
 ## What is the average daily activity pattern?
+```{r}
+avgStepsPerInterval<-aggregate(steps~interval,data=activityData,FUN = mean,simplify = T,na.rm=T)
+plot(avgStepsPerInterval$interval,avgStepsPerInterval$steps,xlab="interval",ylab="Average Steps",main="Average Steps Per Interval ",type = "l",col="lightblue",)
 
+maxStepsInterval<-avgStepsPerInterval[which.max(avgStepsPerInterval$steps),]$interval
 
+```
+
+The 5-minute interval with the maximum steps avereged accross all days is `r maxStepsInterval`
 
 ## Imputing missing values
 
+```{r}
+countNA<-sum(is.na(activityData$steps))
 
+```
+
+The total number of missing values in the dataset is `r countNA` rows.  
+The missing values are replaced by the mean for that 5-minute interval calculated over all days:  
+```{r}
+updateSteps<-function(df,stepsMeanPerInterval){
+        newSteps<-vector(length = nrow(df))
+        for(i in seq_len(nrow(df))){
+                if(is.na(df[i,"steps"])){
+                        newSteps[i]=stepsMeanPerInterval[
+                                which(stepsMeanPerInterval$interval==df[i,"interval"]),"steps"]
+                }
+                else{newSteps[i]=df[i,"steps"]}
+        }
+        newSteps
+}
+
+activityDataNew<-mutate(activityData,steps=updateSteps(activityData,avgStepsPerInterval))
+```
+Calculaing new totals/mean/median:  
+```{r}
+summaryPerDayNew<-activityDataNew %>%
+                group_by(date)%>%
+                summarise(totalSteps=sum(steps,na.rm=T),
+                          meanSteps=mean(steps,na.rm=T),
+                          medianSteps=median(steps,na.rm=T),.groups="keep")
+
+plot(summaryPerDayNew$date,summaryPerDayNew$totalSteps,xlab="Date",ylab="Total steps",main="Total Steps Per Day",type = "h",lwd=5,lend=1,col="lightblue")
+```
+```{r results='asis'}
+
+xtNew<-xtable(summaryPerDayNew)
+print(xtNew,type="html")
+
+```
+
+Comparing the two plots (before and after removing NAs):  
+```{r}
+par(mfcol=c(1,2))
+plot(summaryPerDay$date,summaryPerDay$totalSteps,xlab="Date",ylab="Total steps",main="Total Steps Per Day",type = "h",lwd=5,lend=1,col="lightblue")
+plot(summaryPerDayNew$date,summaryPerDayNew$totalSteps,xlab="Date",ylab="Total steps",main="Total Steps Per Day",type = "h",lwd=5,lend=1,col="lightblue")
+```
+The impact of imputing missing data on the estimates of the total daily number of steps: it helped filling the gaps by eliminating NAs without afftecting summaries  
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+activityDataNew<-mutate(activityDataNew,dayType=
+                     factor( weekdays(activityDataNew$date,T)%in% c("Sat","Sun"),
+                             labels =c("weekday","weekend"))
+                     )
+```
+
+```{r}
+avgStepsPerIntervalNew<-aggregate(steps~interval+dayType,data=activityDataNew,FUN = mean,simplify = T,na.rm=T)
+
+
+xyplot(steps~interval|dayType,data = avgStepsPerIntervalNew,type="l",layout=c(1,2))
+```
+
